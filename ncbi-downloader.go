@@ -12,44 +12,57 @@ import (
 	//"github.com/davecgh/go-spew/spew"
 )
 
+func stripTag(input string) (output string) {
+	splitString := strings.Split(input, ">")
+	//output := ""
+
+	splitString2 := strings.Split(splitString[1], "<")
+	output = splitString2[0]
+	return
+}
+
+func findTag(lines []string, tag string) (output string) {
+	for _, line := range lines {
+		if strings.Contains(line, tag) {
+			output = stripTag(line)
+			break
+		}
+	}
+	return
+}
+
 func main() {
 	fmt.Println("Hello")
 	// https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=mopalia+AND+COI&retmax=500
+	// https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=34577062,24475906&rettype=gb&retmode=xml
 
-	response, _ := http.Get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=mopalia+AND+COI&retmax=10")
-	/*
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			defer response.Body.Close()
-			_, err := io.Copy(os.Stdout, response.Body)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	*/
+	id_response, _ := http.Get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=mopalia+AND+COI&retmax=10")
+	htmlData, _ := ioutil.ReadAll(id_response.Body)
 
-	//words := strings.Fields(response)
-	//fmt.Println(response)
-
-	htmlData, _ := ioutil.ReadAll(response.Body)
-	/*
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	*/
-	// print out
 	htmlString := string(htmlData)
 	splitString := strings.Split(htmlString, "\n")
-	fmt.Println(len(splitString))
 
 	for i, line := range splitString {
-		fmt.Println(i, " => ", line)
-	}
-	//fmt.Println(reflect.TypeOf(response))
 
-	//f, _ := os.Create("temp.txt")
+		if strings.Contains(line, "<Id>") {
+			fmt.Println(i, " => ", stripTag(line))
+		}
+	}
+
+	xml, err := ioutil.ReadFile("sequence.gbx.xml")
+	if err != nil {
+		fmt.Print(err)
+	}
+	xmlString := string(xml)
+	xmlLines := strings.Split(xmlString, "\n")
+
+	locus_id := findTag(xmlLines, "GBSeq_locus")
+	fmt.Println(locus_id)
+
+	//fmt.Println(xmlString)
+	//fmt.Println(reflect.TypeOf(xmlString))
+
+	//f, _ := os.Create("sequence.gb")
 	//check(err)
 	//defer f.Close()
 	//test := "abcd"
