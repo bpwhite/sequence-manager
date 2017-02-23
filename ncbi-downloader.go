@@ -8,6 +8,7 @@ import (
 	"net/http"
 	//"os"
 	//"reflect"
+	"flag"
 	"strings"
 	//"github.com/davecgh/go-spew/spew"
 )
@@ -36,7 +37,23 @@ func main() {
 	// https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=mopalia+AND+COI&retmax=500
 	// https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=34577062,24475906&rettype=gb&retmode=xml
 
-	id_response, _ := http.Get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=mopalia+AND+COI&retmax=1")
+	// Parse command line arguments
+	stermPtr := flag.String("sterm", "COI", "a string")
+	taxonPtr := flag.String("taxon", "mopalia", "a string")
+	retmaxPtr := flag.Int("retmax", 10, "an int")
+	//boolPtr := flag.Bool("test", false, "a bool")
+
+	flag.Parse()
+
+	fmt.Println("search term:", *stermPtr)
+	fmt.Println("taxon:", *taxonPtr)
+	fmt.Println("retmax:", *retmaxPtr)
+	// End command line arguments
+
+	// Concatenate esearch string
+	concat_string := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=", *taxonPtr, "+AND+", *stermPtr, "&retmax=", *retmaxPtr, "")
+	fmt.Println(concat_string, "\n")
+	id_response, _ := http.Get(concat_string)
 	htmlData, _ := ioutil.ReadAll(id_response.Body)
 
 	htmlString := string(htmlData)
