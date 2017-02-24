@@ -40,7 +40,7 @@ func main() {
 	// Parse command line arguments
 	stermPtr := flag.String("sterm", "COI", "a string")
 	taxonPtr := flag.String("taxon", "mopalia", "a string")
-	retmaxPtr := flag.Int("retmax", 10, "an int")
+	retmaxPtr := flag.Int("retmax", 1, "an int")
 	//boolPtr := flag.Bool("test", false, "a bool")
 
 	flag.Parse()
@@ -51,21 +51,37 @@ func main() {
 	// End command line arguments
 
 	// Concatenate esearch string
-	concat_string := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=", *taxonPtr, "+AND+", *stermPtr, "&retmax=", *retmaxPtr, "")
+	concat_string := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&retmax=", *retmaxPtr, "&term=(", *taxonPtr, "+AND+(", *stermPtr, "))")
 	fmt.Println(concat_string, "\n")
+	//os.Exit(1)
 	id_response, _ := http.Get(concat_string)
 	htmlData, _ := ioutil.ReadAll(id_response.Body)
 
 	htmlString := string(htmlData)
 	splitString := strings.Split(htmlString, "\n")
 
-	for i, line := range splitString {
+	seq_counter1 := 0
+	for _, line := range splitString {
 
 		if strings.Contains(line, "<Id>") {
-			fmt.Println(i, " => ", stripTag(line))
+			fmt.Println(line)
+			seq_counter1++
+		}
+	}
+	seq_counter2 := 0
+
+	for _, line := range splitString {
+
+		if strings.Contains(line, "<Id>") {
+			seq_counter2++
+			fmt.Println(line)
+			fmt.Println(seq_counter2, "/", seq_counter1, " => ", stripTag(line))
 			gb_id := stripTag(line)
-			concat_request := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=", gb_id, "&rettype=gb&retmode=xml")
+			concat_request := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=", gb_id, "&rettype=gb&retmode=xml&retmax=1")
 			fmt.Println("Requesting...", concat_request)
+			// Sleep between html requests
+			time.Sleep(time.Millisecond * 500)
+			// Request html page
 			gb_response, _ := http.Get(concat_request)
 			gb_data, _ := ioutil.ReadAll(gb_response.Body)
 
@@ -108,6 +124,12 @@ func main() {
 
 			fmt.Println(GB_nuc_sequence)
 			fmt.Println(GB_prot_sequence)
+
+			/*
+				if seq_counter2 == seq_counter1 {
+					break
+				}
+			*/
 		}
 	}
 	//fmt.Println(xmlString)
