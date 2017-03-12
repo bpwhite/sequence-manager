@@ -50,10 +50,10 @@ Submitted:
 	
 	foreach ($files as &$file) {
 		if (strpos($file, '.html') !== false) {
-			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> <br>" ;
+			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> |" ;
 		}
 		if (strpos($file, '.csv') !== false) {
-			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> | " ;
+			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> <br>" ;
 		}
 		
 	}
