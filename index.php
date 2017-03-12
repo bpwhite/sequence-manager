@@ -37,7 +37,7 @@ Submitted:
 		$command_string = "sequence-manager.exe";
 		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 		} else {
-			$command_string "./sequence-manager";
+			$command_string = "./sequence-manager";
 		}
 		system("$command_string -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]");
 		
