@@ -7,10 +7,11 @@
    <option value="&quot;(COI[All Fields] OR \&quot;cytochrome oxidase I\&quot;[All Fields] OR \&quot;cytochrome oxidase subunit I\&quot;[All Fields] OR COX1[All Fields] OR \&quot;COXI\&quot;[All Fields]) NOT (\&quot;complete genome\&quot;[title] OR \&quot;complete DNA\&quot;[title])&quot;">
 </datalist>
 <select name="retmax">
-  <option value="10" selected>10</option>
+  <option value="10">10</option>
   <option value="50">50</option>
   <option value="100">100</option>
-  <option value="500">500</option>
+  <option value="500" selected>500</option>
+  <option value="1000">1000</option>
 </select>
   <input type="submit" value="Submit">
   <input type="button" onclick="myFunction()" value="Reset form">
