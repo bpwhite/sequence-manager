@@ -46,7 +46,8 @@ Submitted:
 	
 	$dir    = '../sequence-manager/output';
 	$files = scandir($dir);
-
+	$files = array_reverse($files);
+	
 	foreach ($files as &$file) {
 		if (strpos($file, '.html') !== false) {
 			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> <br>" ;

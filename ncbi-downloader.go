@@ -60,9 +60,12 @@ func main() {
 
 	// output
 	run_tag := RandStringRunes(6)
-	output_string := fmt.Sprint("output/", run_tag, "_", *taxonPtr, ".csv")
+	t := time.Now()
+	//fmt.Println(t.Format("20060102150405"))
+	time_stamp := t.Format("20060102150405")
+	output_string := fmt.Sprint("output/", time_stamp, "_", run_tag, "_", *taxonPtr, ".csv")
 	outp, _ := os.Create(output_string)
-	status_string := fmt.Sprint("output/", run_tag, "_", *taxonPtr, ".html")
+	status_string := fmt.Sprint("output/", time_stamp, "_", run_tag, "_", *taxonPtr, ".html")
 	outht, _ := os.Create(status_string)
 
 	outht.WriteString(fmt.Sprint("search term:", *stermPtr, "<br>"))
