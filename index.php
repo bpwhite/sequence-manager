@@ -1,4 +1,4 @@
-<form>
+<form id="seq">
 <label for="taxon">Taxon: </label><input type="text" name="taxon">
 
 <label for="search_term">Search Term: </label><input id="search_term" name="search_term" type="text" list="search_terms" />
@@ -13,19 +13,44 @@
   <option value="500">500</option>
 </select>
   <input type="submit" value="Submit">
+  <input type="button" onclick="myFunction()" value="Reset form">
 </form>
-
-Submit: 
+<script>
+function myFunction() {
+    document.getElementById("seq").reset();
+}
+</script>
+Submitted:
+<br>
+<br>
 <?php
+	
+	if(isset($_GET['search_term'])) {
+		echo $_GET["taxon"];
+		echo "<br>";
+		echo $_GET["search_term"];
+		echo "<br>";
+		$command = "sequence-manager.exe -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]";
+		echo $command;
+		echo "<br>";
+		echo "<br>";
+		
+		system("sequence-manager.exe -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]");
+		
+		header( 'Location: ../sequence-manager/index.php' ) ;
+	}
+	
+	$dir    = '../sequence-manager/output';
+	$files = scandir($dir);
 
-	echo $_GET["taxon"];
-	echo "<br>";
-	echo $_GET["search_term"];
-	echo "<br>";
-	$command = "sequence-manager.exe -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]";
-	echo $command;
-	echo "<br>";
-	echo "<br>";
-	system("sequence-manager.exe -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]");
+	foreach ($files as &$file) {
+		if (strpos($file, '.html') !== false) {
+			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> <br>" ;
+		}
+		if (strpos($file, '.csv') !== false) {
+			echo "<a href=\"output\\" .$file . "\">" . $file . "</a> | " ;
+		}
+		
+	}
 
 ?>

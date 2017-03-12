@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	//"log"
 	"net/http"
-	//"os"
+	"os"
+	"time"
 	//"reflect"
 	"flag"
 	"strings"
 	//"github.com/davecgh/go-spew/spew"
+	"math/rand"
 )
 
 func stripTag(input string) (output string) {
@@ -25,17 +27,28 @@ func stripTag(input string) (output string) {
 func findTag(lines []string, tag string, offset int) (output string) {
 	for i, line := range lines {
 		if strings.Contains(line, tag) {
-			output = stripTag(lines[i+offset])
+			output = strings.Replace(stripTag(lines[i+offset]), ",", "_", -1)
 			break
 		}
 	}
 	return
 }
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
 func main() {
-	fmt.Println("Hello")
-	// https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=mopalia+AND+COI&retmax=500
-	// https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=34577062,24475906&rettype=gb&retmode=xml
 
 	// Parse command line arguments
 	stermPtr := flag.String("sterm", "COI", "a string")
@@ -45,14 +58,21 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Println("search term:", *stermPtr)
-	fmt.Println("taxon:", *taxonPtr)
-	fmt.Println("retmax:", *retmaxPtr)
+	// output
+	run_tag := RandStringRunes(6)
+	output_string := fmt.Sprint("output/", run_tag, "_", *taxonPtr, ".csv")
+	outp, _ := os.Create(output_string)
+	status_string := fmt.Sprint("output/", run_tag, "_", *taxonPtr, ".html")
+	outht, _ := os.Create(status_string)
+
+	outht.WriteString(fmt.Sprint("search term:", *stermPtr, "<br>"))
+	outht.WriteString(fmt.Sprint("taxon:", *taxonPtr, "<br>"))
+	outht.WriteString(fmt.Sprint("retmax:", *retmaxPtr, "<br>"))
 	// End command line arguments
 
 	// Concatenate esearch string
 	concat_string := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&retmax=", *retmaxPtr, "&term=(", *taxonPtr, "+AND+(", *stermPtr, "))")
-	fmt.Println(concat_string, "\n")
+	outht.WriteString(fmt.Sprint(concat_string, "<br>"))
 	//os.Exit(1)
 	id_response, _ := http.Get(concat_string)
 	htmlData, _ := ioutil.ReadAll(id_response.Body)
@@ -64,21 +84,23 @@ func main() {
 	for _, line := range splitString {
 
 		if strings.Contains(line, "<Id>") {
-			fmt.Println(line)
+			outht.WriteString(fmt.Sprint(line, ","))
 			seq_counter1++
 		}
 	}
 	seq_counter2 := 0
 
+	//check(err)
+	//defer outp.Close()
 	for _, line := range splitString {
 
 		if strings.Contains(line, "<Id>") {
 			seq_counter2++
-			fmt.Println(line)
-			fmt.Println(seq_counter2, "/", seq_counter1, " => ", stripTag(line))
+			outht.WriteString(fmt.Sprint(line, "<br>"))
+			outht.WriteString(fmt.Sprint(seq_counter2, "/", seq_counter1, " => ", stripTag(line), "<br>"))
 			gb_id := stripTag(line)
 			concat_request := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=", gb_id, "&rettype=gb&retmode=xml&retmax=1")
-			fmt.Println("Requesting...", concat_request)
+			outht.WriteString(fmt.Sprint("Requesting...", concat_request, "<br>"))
 			// Sleep between html requests
 			time.Sleep(time.Millisecond * 500)
 			// Request html page
@@ -101,37 +123,39 @@ func main() {
 			GB_accession_version := findTag(xmlLines, "GBSeq_accession-version", 0)
 			GB_nuc_sequence := findTag(xmlLines, "GBSeq_sequence", 0)
 			GB_source := findTag(xmlLines, "GBSeq_source", 0)
-			GB_organism := findTag(xmlLines, "GBSeq_organism", 0)
+			GB_organism := strings.Replace(findTag(xmlLines, "GBSeq_organism", 0), " ", "_", -1)
 			GB_taxonomy := findTag(xmlLines, "GBSeq_taxonomy", 0)
 			GB_prot_sequence := findTag(xmlLines, "<GBQualifier_name>translation", 1)
 
-			fmt.Println(GB_locus_id)
-			fmt.Println(GB_seq_length)
-			fmt.Println(GB_strandedness)
-			fmt.Println(GB_moltype)
-			fmt.Println(GB_toplogy)
-			fmt.Println(GB_division)
+			outp.WriteString(fmt.Sprint(GB_locus_id, ","))
+			outp.WriteString(fmt.Sprint(GB_seq_length, ","))
+			outp.WriteString(fmt.Sprint(GB_strandedness, ","))
+			outp.WriteString(fmt.Sprint(GB_moltype, ","))
+			outp.WriteString(fmt.Sprint(GB_toplogy, ","))
+			outp.WriteString(fmt.Sprint(GB_division, ","))
 
-			fmt.Println(GB_update_date)
-			fmt.Println(GB_create_date)
-			fmt.Println(GB_strandedness)
-			fmt.Println(GB_definition)
-			fmt.Println(GB_primary_accession)
-			fmt.Println(GB_accession_version)
-			fmt.Println(GB_source)
-			fmt.Println(GB_organism)
-			fmt.Println(GB_taxonomy)
+			outp.WriteString(fmt.Sprint(GB_update_date, ","))
+			outp.WriteString(fmt.Sprint(GB_create_date, ","))
+			outp.WriteString(fmt.Sprint(GB_definition, ","))
+			outp.WriteString(fmt.Sprint(GB_primary_accession, ","))
+			outp.WriteString(fmt.Sprint(GB_accession_version, ","))
+			outp.WriteString(fmt.Sprint(GB_source, ","))
+			outp.WriteString(fmt.Sprint(GB_organism, ","))
+			outp.WriteString(fmt.Sprint(GB_taxonomy, ","))
 
-			fmt.Println(GB_nuc_sequence)
-			fmt.Println(GB_prot_sequence)
+			outp.WriteString(fmt.Sprint(GB_nuc_sequence, ","))
+			outp.WriteString(fmt.Sprint(GB_organism, "$", GB_nuc_sequence, ","))
+			outp.WriteString(fmt.Sprint(GB_prot_sequence, ","))
+			outp.WriteString("\n")
+			// Make sure not to exceed reported ID's
+			if seq_counter2 == seq_counter1 {
+				break
+			}
 
-			/*
-				if seq_counter2 == seq_counter1 {
-					break
-				}
-			*/
 		}
 	}
+
+	outp.Sync()
 	//fmt.Println(xmlString)
 	//fmt.Println(reflect.TypeOf(xmlString))
 
