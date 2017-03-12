@@ -34,8 +34,12 @@ Submitted:
 		echo $command;
 		echo "<br>";
 		echo "<br>";
-		
-		system("sequence-manager.exe -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]");
+		$command_string = "sequence-manager.exe";
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+		} else {
+			$command_string "./sequence-manager"
+		}
+		system("$command_string -sterm=$_GET[search_term] -taxon=$_GET[taxon] -retmax=$_GET[retmax]");
 		
 		header( 'Location: ../sequence-manager/index.php' ) ;
 	}
