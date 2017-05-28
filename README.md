@@ -1,3 +1,3 @@
-Sequene Manager.
+Sequence Manager.
 
 A program for downloading sequences from the NCBI nucleotide database.
