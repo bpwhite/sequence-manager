@@ -95,6 +95,11 @@ func main() {
 
 	//check(err)
 	//defer outp.Close()
+
+	// New code Matt 7/26/2017
+	outp.WriteString("locus_id,seq_length,strandedness,moltype,toplogy,division,update_date,create_date,definition,primary_accession,accession_version,source,organism,taxonomy,nuc_sequence,prot_sequence,taxon_id,gene,product,codon_start,organelle,pub_title,pub_authors,pub_jrn\n") // write headers for fields
+	// end New code
+
 	for _, line := range splitString {
 
 		if strings.Contains(line, "<Id>") {
@@ -131,17 +136,16 @@ func main() {
 			GB_prot_sequence := findTag(xmlLines, "<GBQualifier_name>translation", 1)
 
 			// New code Matt 7/26/2017
-			GB_taxon_id := findTag(xmlLines, "<GBQualifier_name>db_xref",1)
-			GB_gene := findTag(xmlLines, "<GBQualifier_name>gene",1)
-			GB_product := findTag(xmlLines, "<GBQualifier_name>product",1)
-			GB_codon_start := findTag(xmlLines, "<GBQualifier_name>codon_start",1)
-			GB_organelle := findTag(xmlLines, "<GBQualifier_name>organelle",1)
-			GB_pub_title := findTag(xmlLines, "<GBReference_title>",0)
-			GB_pub_authors := findTag(xmlLines, "<GBReference_authors>",0) // multiple tags
-			GB_pub_jrn := findTag(xmlLines, "<GBReference_journal>",0)
+			GB_taxon_id := strings.SplitAfter(findTag(xmlLines, "<GBQualifier_name>db_xref", 1), "taxon:")[1]
+			GB_gene := findTag(xmlLines, "<GBQualifier_name>gene", 1)
+			GB_product := findTag(xmlLines, "<GBQualifier_name>product", 1)
+			GB_codon_start := findTag(xmlLines, "<GBQualifier_name>codon_start", 1)
+			GB_organelle := findTag(xmlLines, "<GBQualifier_name>organelle", 1)
+			GB_pub_title := findTag(xmlLines, "<GBReference_title>", 0)
+			GB_pub_authors := findTag(xmlLines, "<GBReference_authors>", 0) // multiple tags
+			GB_pub_jrn := findTag(xmlLines, "<GBReference_journal>", 0)
 			// end New code
 
-		
 			outp.WriteString(fmt.Sprint(GB_locus_id, ","))
 			outp.WriteString(fmt.Sprint(GB_seq_length, ","))
 			outp.WriteString(fmt.Sprint(GB_strandedness, ","))
@@ -159,7 +163,7 @@ func main() {
 			outp.WriteString(fmt.Sprint(GB_taxonomy, ","))
 
 			outp.WriteString(fmt.Sprint(GB_nuc_sequence, ","))
-			outp.WriteString(fmt.Sprint(GB_organism, "$", GB_nuc_sequence, ","))
+			// outp.WriteString(fmt.Sprint(GB_organism, "$", GB_nuc_sequence, ",")) // Matt 7/26/2017: redundant? no header for this field currently
 			outp.WriteString(fmt.Sprint(GB_prot_sequence, ","))
 
 			// New code Matt 7/26/2017
