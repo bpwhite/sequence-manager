@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 	//"log"
 	"net/http"
-	"os"
+	//"os"
 	"time"
 	//"reflect"
 	"flag"
 	"strings"
 	//"github.com/davecgh/go-spew/spew"
-	"math/rand"
+	//"math/rand"
 )
 
 func stripTag(input string) (output string) {
@@ -23,10 +23,12 @@ func stripTag(input string) (output string) {
 	//output := ""
 
 	splitString2 := strings.Split(splitString[1], "<")
-	output = splitString2[0]
-	return
-}
 
+	output = splitString2[0]
+
+	return
+
+}
 
 func findTag(lines []string, tag string, offset int) (output string) {
 
@@ -36,14 +38,20 @@ func findTag(lines []string, tag string, offset int) (output string) {
 	output = "NA"
 
 	for i, line := range lines {
-		if strings.Contains(line, tag) {
-			output = strings.Replace(stripTag(lines[i+offset]), ",", "_", -1)
-			break
-		}
-	}
-	return
-}
 
+		if strings.Contains(line, tag) {
+
+			output = strings.Replace(stripTag(lines[i+offset]), ",", "_", -1)
+
+			break
+
+		}
+
+	}
+
+	return
+
+}
 
 func findTags(lines []string, tag string) (output string) {
 
@@ -88,67 +96,143 @@ func findTags(lines []string, tag string) (output string) {
 
 }
 
+//func init() {
+//	rand.Seed(time.Now().UnixNano())
+//}
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+
+//var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+//
+//func RandStringRunes(n int) string {
+//	b := make([]rune, n)
+//	for i := range b {
+//		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+//	}
+//	return string(b)
+//}
+
+func esearchString(retmax int, taxon string, terms map[string][]string) (concat_string string) {
+
+	// Parses parameters (retmax and taxon are required) into an eutils URL.
+	// Optional map terms contains key:[value, logic], e.g. title:[mitochondrion, AND]
+	// which becomes +AND+mitochondrion[title] in the eutils URL
+	// example: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore&retmax=10&term=mollusca[organism]+AND+complete[title]+AND+genome[title]+AND+mitochondrion[title]
+
+	concat_string = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nuccore&retmax="
+
+	concat_string += fmt.Sprint(retmax, "&term=", taxon, "[organism]")
+
+	for key := range terms {
+
+		fmt.Println(key)
+
+		concat_string += fmt.Sprint("+", terms[key][1], "+", terms[key][0], "[", key, "]")
+
+
+	}
+
+	return
+
 }
 
+type termsFlags []string // This will be implemented as type flag.Value using the following methods:
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+func (i *termsFlags) String() string { // String() method for type termsFlags (when implemented as type flag.Value in flag.Var call in main() )
 
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
+	return ""
+
+}
+
+func (i *termsFlags) Set(value string) error { // Here the -term flags are actually parsed. These methods are run automatically when flag.Var is called during main() because type flag.Value's methods are run upon parsing by default
+
+	*i = append(*i, strings.TrimSpace(value))
+
+	return nil
+
 }
 
 func main() {
 
 	// Parse command line arguments
-	stermPtr := flag.String("sterm", "COI", "a string")
-	taxonPtr := flag.String("taxon", "mopalia", "a string")
-	retmaxPtr := flag.Int("retmax", 1, "an int")
-	//boolPtr := flag.Bool("test", false, "a bool")
+
+	//stermPtr := flag.String("sterm", "COI", "a string")
+
+	taxonPtr := flag.String("taxon", "mopalia", "a string") // Will be used with [Organism] flag in eutils URL
+
+	retmaxPtr := flag.Int("retmax", 1, "an int") // The maximum number of records to return from entrez search (the first n (retmax) encountered in search result XML will be returned)
+
+	var terms termsFlags // To collect terms (multiple -term flags may be used)
+
+	flag.Var(&terms, "term", "comma-sep string: label,searchTerm,logic   e.g. title,mitochondrion,AND   multiple -term may be specified") // becomes +AND+mitochondrion[title] in the eutils esearch URL
 
 	flag.Parse()
 
-	// output
-	run_tag := RandStringRunes(6)
-	t := time.Now()
-	//fmt.Println(t.Format("20060102150405"))
-	time_stamp := t.Format("20060102150405")
-	status_string := fmt.Sprint("output/", time_stamp, "_", run_tag, "_", *taxonPtr, ".html")
-	outht, _ := os.Create(status_string)
+	termMap := make(map[string][]string) // Turn comma-sep strings passed with -term into map: label,term,logic -> { label:[term, logic] }
 
-	outht.WriteString(fmt.Sprint("search term:", *stermPtr, "<br>"))
-	outht.WriteString(fmt.Sprint("taxon:", *taxonPtr, "<br>"))
-	outht.WriteString(fmt.Sprint("retmax:", *retmaxPtr, "<br>"))
+	if len(terms) > 0 {
+
+		for _,term := range terms {
+
+			splitTerms := strings.Split(term, ",")
+
+			val := []string{ splitTerms[1], splitTerms[2] }
+
+			termMap[splitTerms[0]] = val
+
+		}
+
+	}
+
+	//testString := esearchString(*retmaxPtr, *taxonPtr, termMap)
+
+	//fmt.Println(testString)
+
+	// os.Exit(1)
+
+	// output
+//	run_tag := RandStringRunes(6)
+//	t := time.Now()
+//	//fmt.Println(t.Format("20060102150405"))
+//	time_stamp := t.Format("20060102150405")
+//	status_string := fmt.Sprint("output/", time_stamp, "_", run_tag, "_", *taxonPtr, ".html")
+//	outht, _ := os.Create(status_string)
+//
+//	outht.WriteString(fmt.Sprint("search term:", *stermPtr, "<br>"))
+//	outht.WriteString(fmt.Sprint("taxon:", *taxonPtr, "<br>"))
+//	outht.WriteString(fmt.Sprint("retmax:", *retmaxPtr, "<br>"))
 	// End command line arguments
 
 	// Concatenate esearch string
-	concat_string := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&retmax=", *retmaxPtr, "&term=(", *taxonPtr, "+AND+(", *stermPtr, "))")
-	outht.WriteString(fmt.Sprint(concat_string, "<br>"))
+	// concat_string := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&retmax=", *retmaxPtr, "&term=(", *taxonPtr, "+AND+(", *stermPtr, "))")
+//	outht.WriteString(fmt.Sprint(concat_string, "<br>"))
 	//os.Exit(1)
+
+	concat_string := esearchString(*retmaxPtr, *taxonPtr, termMap) // Assemble eutils esearch URL
+
 	id_response, _ := http.Get(concat_string)
+
 	htmlData, _ := ioutil.ReadAll(id_response.Body)
 
 	htmlString := string(htmlData)
-	splitString := strings.Split(htmlString, "\n")
 
+	splitString := strings.Split(htmlString, "\n") // Convert XML string into slice
 
 	// Count how many records were found
-	seq_counter1 := 0 
+	seq_counter1 := 0
+
 	for _, line := range splitString {
 
 		if strings.Contains(line, "<Id>") {
-			outht.WriteString(fmt.Sprint(line, ","))
-			seq_counter1++
-		}
-	}
-	seq_counter2 := 0
 
+			//outht.WriteString(fmt.Sprint(line, ","))
+
+			seq_counter1++
+
+		}
+
+	}
+
+	seq_counter2 := 0
 
 	// write headers for fields
 	fmt.Println(	`locus_id,seq_length,strandedness,moltype,toplogy,division,update_date,create_date,definition,primary_accession,accession_version,source,organism,taxonomy,nuc_sequence,prot_sequence,taxon_id,gene,product,codon_start,organelle,pub_title,pub_authors,pub_jrn,voucher,country,lat_long,note`)
@@ -157,11 +241,11 @@ func main() {
 
 		if strings.Contains(line, "<Id>") {
 			seq_counter2++
-			outht.WriteString(fmt.Sprint(line, "<br>"))
-			outht.WriteString(fmt.Sprint(seq_counter2, "/", seq_counter1, " => ", stripTag(line), "<br>"))
+		//	outht.WriteString(fmt.Sprint(line, "<br>"))
+		//	outht.WriteString(fmt.Sprint(seq_counter2, "/", seq_counter1, " => ", stripTag(line), "<br>"))
 			gb_id := stripTag(line)
 			concat_request := fmt.Sprint("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=", gb_id, "&rettype=gb&retmode=xml&retmax=1")
-			outht.WriteString(fmt.Sprint("Requesting...", concat_request, "<br>"))
+		//	outht.WriteString(fmt.Sprint("Requesting...", concat_request, "<br>"))
 			// Sleep between html requests
 			time.Sleep(time.Millisecond * 500)
 			// Request html page
@@ -237,7 +321,9 @@ func main() {
 
 			// Make sure not to exceed reported ID's
 			if seq_counter2 == seq_counter1 {
+
 				break
+
 			}
 
 		}
