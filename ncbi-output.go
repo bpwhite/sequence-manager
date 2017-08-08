@@ -33,15 +33,35 @@ func stripTag(input string) (output string) {
 func findTag(lines []string, tag string, offset int) (output string) {
 
 	// Finds first occurrence of <tag> in lines (XML) and returns value
-	// from line that is offset number of lines beyond <tag>.
+	// from line that is offset number of tags beyond <tag>.
 
-	output = "NA"
+	output = "NA" // Default output (i.e. if tag is not found, output is NA)
 
-	for i, line := range lines {
+	offsetCount := -1 // Counts the number of tags after the tag specified in args during loop
+
+	tagRE, _ := regexp.Compile("<.*?>") // Regular expression matches any opening or closing tag
+
+	for _, line := range lines {
+
+		if offsetCount > -1 { // This will be true once the tag has been found, and will increment for each following tag. There are sometimes empty lines between tags which need to be ignored.
+
+			if tagRE.MatchString(line) {
+
+				offsetCount += 1
+
+			}
+
+		}
 
 		if strings.Contains(line, tag) {
 
-			output = strings.Replace(stripTag(lines[i+offset]), ",", "_", -1)
+			offsetCount += 1
+
+		}
+
+		if offsetCount == offset {
+
+			output = strings.Replace(stripTag(line), ",", "_", -1)
 
 			break
 
@@ -60,7 +80,10 @@ func findTags(lines []string, tag string) (output string) {
 	// <GBReference_authors> in mind for which there are multiple <GBAuthor> subtags
 
 	end_tag := strings.Replace(tag, "<", "</", 1)
+
 	collect := false
+
+	output = "NA"
 
 	for _, line := range lines {
 
@@ -123,8 +146,6 @@ func esearchString(retmax int, taxon string, terms map[string][]string) (concat_
 	concat_string += fmt.Sprint(retmax, "&term=", taxon, "[organism]")
 
 	for key := range terms {
-
-		fmt.Println(key)
 
 		concat_string += fmt.Sprint("+", terms[key][1], "+", terms[key][0], "[", key, "]")
 
@@ -272,7 +293,7 @@ func main() {
 			GB_organism := strings.Replace(findTag(xmlLines, "GBSeq_organism", 0), " ", "_", -1)
 			GB_taxonomy := findTag(xmlLines, "GBSeq_taxonomy", 0)
 			GB_prot_sequence := findTag(xmlLines, "<GBQualifier_name>translation", 1)
-			GB_taxon_id := strings.SplitAfter(findTag(xmlLines, "<GBQualifier_name>db_xref", 1), "taxon:")[1]
+			GB_taxon_id := strings.SplitAfter(findTag(xmlLines, "<GBQualifier_name>value:", 0), "taxon:")[1]
 			GB_gene := findTag(xmlLines, "<GBQualifier_name>gene", 1)
 			GB_product := findTag(xmlLines, "<GBQualifier_name>product", 1)
 			GB_codon_start := findTag(xmlLines, "<GBQualifier_name>codon_start", 1)
