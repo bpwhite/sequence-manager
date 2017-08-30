@@ -472,6 +472,8 @@ func main() {
 
 	regSearch := flag.Bool("reg", false, "bool") // Exclude complete or partial mito genomes in the search
 
+	returnNumRecords := flag.Bool("num", false, "bool") // If true simply do the search and return how many records were found
+
 	// If both mitoSearch and regSearch are specified do not restrict search
 
 	var terms termsFlags // To collect terms (multiple -term flags may be used)
@@ -526,6 +528,22 @@ func main() {
 	htmlString := string(htmlData)
 
 	splitString := strings.Split(htmlString, "\n") // Convert XML string into slice
+
+	if *returnNumRecords { // Return number of records found (ends program). Run if -num specified
+
+		countRE, _ := regexp.Compile("<Count>([0-9]+)</Count>")
+		count := "NA"
+
+		for _, line := range splitString {
+			if strings.Contains(line, "<Count>") {
+				count = countRE.FindStringSubmatch(line)[1]
+			}
+		}
+
+		//count := findTag(splitString, "<Count>", 0)
+		fmt.Println(count)
+		return
+	}
 
 	//seq_counter1 := 0 // Count how many records were found
 
