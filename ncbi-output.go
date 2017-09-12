@@ -187,7 +187,7 @@ func parseLocality(GB_country string) (country, locality string) {
 }
 
 
-func parseNonMitoGenomeXML(xmlLines []string, geneNames map[string]bool) {
+func parseNonMitoGenomeXML(xmlLines []string, geneNames map[string]bool, minSeqLen int, maxSeqLen int) {
 
 		GB_locus_id := findTag(xmlLines, "GBSeq_locus", 0)
 		GB_seq_length := findTag(xmlLines, "GBSeq_length", 0)
@@ -223,8 +223,12 @@ func parseNonMitoGenomeXML(xmlLines []string, geneNames map[string]bool) {
 		GB_isolate := findTag(xmlLines, "<GBQualifier_name>isolate", 1)
 		GB_comment := findTag(xmlLines, "<GBSeq_comment", 0)
 		GB_prot_sequence := findTag(xmlLines, "<GBQualifier_name>translation", 1)
-		GB_nuc_sequence := findTag(xmlLines, "GBSeq_sequence", 0)
 		GB_cds_sequence := findTag(xmlLines, "<GBQualifier_name>transcription", 1)
+		GB_nuc_sequence := findTag(xmlLines, "GBSeq_sequence", 0)
+
+		if len(GB_nuc_sequence) < minSeqLen || len(GB_nuc_sequence) > maxSeqLen {
+			GB_nuc_sequence = "NA"
+		}
 
 		fastaHeader := ">" + GB_organism + "_" + GB_primary_accession
 		fastaHeaderAndNucSeq := fastaHeader + "$" + GB_nuc_sequence
@@ -467,7 +471,7 @@ func EfetchPOSTrequest(gb_ids string) (xmlLines []string) {
 	return
 }
 
-func processGBSeqXMLrecords(xmlLines []string, geneNames map[string]bool) {
+func processGBSeqXMLrecords(xmlLines []string, geneNames map[string]bool, minSeqLen int, maxSeqLen int) {
 
 	var xmlOneRecord []string
 
@@ -487,7 +491,7 @@ func processGBSeqXMLrecords(xmlLines []string, geneNames map[string]bool) {
 			if (strings.Contains(definition, "mitochondri") && strings.Contains(definition, "genome")) && (strings.Contains(definition, "partial") || strings.Contains(definition, "complete")) {
 				parseMitoGenomeXML(xmlOneRecord, geneNames)
 			} else {
-				parseNonMitoGenomeXML(xmlOneRecord, geneNames)
+				parseNonMitoGenomeXML(xmlOneRecord, geneNames, minSeqLen, maxSeqLen)
 			}
 		}
 	}
@@ -498,6 +502,8 @@ func main() {
 
 	taxonPtr := flag.String("taxon", "", "a string") // Will be used with [Organism] flag in eutils URL
 	retmaxPtr := flag.Int("retmax", 1, "an int") // The maximum number of records to return from entrez search (the first n (retmax) encountered in search result XML will be returned)
+	minSeqLen := flag.Int("minSeqLen", 0, "an int") // The maximum number of records to return from entrez search (the first n (retmax) encountered in search result XML will be returned)
+	maxSeqLen := flag.Int("maxSeqLen", 15000, "an int") // The maximum number of records to return from entrez search (the first n (retmax) encountered in search result XML will be returned)
 	mitoSearch := flag.Bool("mito", false, "bool") // Include complete or partial mito genomes in the search
 	regSearch := flag.Bool("reg", false, "bool") // Exclude complete or partial mito genomes in the search
 	returnNumRecords := flag.Bool("num", false, "bool") // If true simply do the search and return how many records were found
@@ -575,13 +581,13 @@ func main() {
 
 		if num_ids == 500 {
 			xmlLines := EfetchPOSTrequest(gb_ids)
-			processGBSeqXMLrecords(xmlLines, geneNames)
+			processGBSeqXMLrecords(xmlLines, geneNames, *minSeqLen, *maxSeqLen)
 			gb_ids = ""
 			num_ids = 0
 		}
 	}
 	if gb_ids != "" {
 			xmlLines := EfetchPOSTrequest(gb_ids)
-			processGBSeqXMLrecords(xmlLines, geneNames)
+			processGBSeqXMLrecords(xmlLines, geneNames, *minSeqLen, *maxSeqLen)
 	}
 }
